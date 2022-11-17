@@ -3,7 +3,7 @@ import UIKit
 
 class ViewController: UIViewController
 {
-   
+    fileprivate static let rootKey = "rootKey"
     
     @IBOutlet var lineFields:[UITextField]!
 
@@ -11,21 +11,29 @@ class ViewController: UIViewController
     {
         super.viewDidLoad()
        
-        let fileURL = self.dataFileURL()
-
+       let fileURL = self.dataFileURL()
         if (FileManager.default.fileExists(atPath: fileURL.path!))
         {
-            if let array = NSArray(contentsOf: fileURL as URL) as? [String]
+            
+            do
             {
-                for i in 0..<array.count
+                let data = try Data(contentsOf: fileURL as URL)
+                if let lines = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? [String]
                 {
-                    lineFields[i].text = array[i]
+                    for i in 0..<lines.count
+                    {
+                        lineFields[i].text = lines[i]
+                    }
                 }
             }
-                                
+            catch
+            {
+                print("Error reading file")
+            }
         }
-
+        
         let app = UIApplication.shared
+            
         
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.applicationWillResignActive(notification:)),
@@ -33,41 +41,36 @@ class ViewController: UIViewController
     
         
     }
-    
-    func dataFileURL() -> NSURL
+      
+    @objc func applicationWillResignActive(notification: NSNotification)
     {
-        let urls = FileManager.default.urls(for:.documentDirectory, in: .userDomainMask)
-        var url:NSURL?
+        let fileURL = self.dataFileURL()
+        let array = (self.lineFields as NSArray).value(forKey: "text") as! [String]
         
-        // create a blank path
-        url = URL(fileURLWithPath: "") as NSURL?
         do
         {
-            url = urls.first?.appendingPathComponent("data.plist") as NSURL?
+            let data = try NSKeyedArchiver.archivedData(withRootObject: array, requiringSecureCoding: false)
+            try data.write(to: dataFileURL() as URL)
         }
         catch
         {
-           print("Error is \(error)")
+            print("couldn't write to file")
         }
-        
-        return url!
-    }
-    
-    @objc func applicationWillResignActive(notification: NSNotification)
-    {
-        print("in appication will resign active")
-        
-        let fileURL = self.dataFileURL()
-        
-        let array: NSMutableArray = []
-        
-        for line in self.lineFields
-        {
-            array.add(line.text!)
-        }
-       
-        array.write(to: fileURL as URL, atomically: true)
-    }
 
+    } // end applicationWillResignActive
+    
+    func dataFileURL() -> NSURL {
+         let urls = FileManager.default.urls(for:.documentDirectory, in: .userDomainMask)
+         var url: NSURL?
+         url = URL(fileURLWithPath: "") as NSURL?      // create a blank path
+         do {
+                url = urls.first?.appendingPathComponent("data1.plist") as NSURL?
+         }
+         catch {
+             print("Error is \(error)")
+         }
+            
+         return url!
+        } // end dataFileURL
 }
 
