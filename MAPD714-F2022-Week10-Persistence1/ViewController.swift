@@ -3,6 +3,8 @@ import UIKit
 
 class ViewController: UIViewController
 {
+   
+    
     @IBOutlet var lineFields:[UITextField]!
 
     override func viewDidLoad()
